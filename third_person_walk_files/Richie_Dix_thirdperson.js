@@ -63,14 +63,6 @@ var stack = [];
 
 var figure = [];
 
-// position of the person in the scene
-let x, y, z = 0;
-let speed = 0.1;
-let direction = [0,0,-1]; //facing forward
-let keys = {};
-
-// Initializing an array called figure with the number of nodes where each element is an object created by the createNode
-// function
 for( var i=0; i<numNodes; i++) figure[i] = createNode(null, null, null, null);
 
 var vBuffer;
@@ -78,12 +70,19 @@ var modelViewLoc;
 
 var pointsArray = [];
 
+let movement = {
+    forward: false,
+    backward: false,
+    left: false,
+    right: false
+};
+
+let position = vec3(0, 0, 0);  // Initial world position
+let direction = 0; // Y-axis rotation angle in degrees
+const speed = 0.1;
+
 //-------------------------------------------
 
-// Used to create a scaling transformation matrix in a 3D graphics context. Generates a 4x4 matrix that scales objects
-// by specified factors along the x, y, and z axes.
-// mat4 is a function that creates a 4x4 identity matrix, and the function scale4 takes three parameters a, b, and c,
-// which represent the scaling factors along the x, y, and z axes respectively. The resulting matrix is used to scale
 function scale4(a, b, c) {
    var result = mat4();
    result[0] = a;
@@ -94,9 +93,7 @@ function scale4(a, b, c) {
 
 //--------------------------------------------
 
-// used to build a hierarchical structure where each node can represent a part of a large system (body)
-// Each node represents a body part. transform defines the position and orientation, child links the sub-parts
-// sibling links to other parts at the same level.
+
 function createNode(transform, render, sibling, child){
     var node = {
     transform: transform,
@@ -112,14 +109,10 @@ function initNodes(Id) {
 
     var m = mat4();
 
-    //switch between the Ids
     switch(Id) {
 
     case torsoId:
 
-    // Creates a rotation matrix that rotates the trso of the character around the y-axis
-    // theta[torsoId] is the angle of rotation in degrees
-    // figure[torsoId] creates a node in the hierarchical structure for the character and assigns it to the torsoId
     m = rotate(theta[torsoId], vec3(0, 1, 0) );
     figure[torsoId] = createNode( m, torso, null, headId );
     break;
@@ -197,9 +190,6 @@ function initNodes(Id) {
 
 }
 
-
-// recursive function to traverse a scene graph (a hierarchical structure of nodes) and render a 3D model.
-// It uses a stack to keep track of the current model-view matrix as it traverses through the nodes.
 function traverse(Id) {
 
    if(Id == null) return;
@@ -211,17 +201,11 @@ function traverse(Id) {
    if(figure[Id].sibling != null) traverse(figure[Id].sibling);
 }
 
-// The torso function is responsible for rendering the torso of a character in a 3D graphics context.
-// It uses the modelViewMatrix to position and scale the torso, and then draws it using a series of triangle fans.
 function torso() {
 
-    // Create a transformation matrix for the torso
     instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5*torsoHeight, 0.0) );
-    // Scale the torso to the specified width and height
     instanceMatrix = mult(instanceMatrix, scale( torsoWidth, torsoHeight, torsoWidth));
-    // Set the modelViewMatrix uniform variable in the shader program
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix) );
-    // Draw the torso using triangle fans
     for(var i =0; i<6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4*i, 4);
 }
 
@@ -344,8 +328,6 @@ window.onload = function init() {
 
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix")
 
-    // Load the data into the GPU
-    // initializing cube
     cube();
 
     vBuffer = gl.createBuffer();
@@ -404,15 +386,86 @@ window.onload = function init() {
          initNodes(head2Id);
     };
 
+    window.addEventListener("keydown", (e) => {
+        switch(e.key.toLowerCase()) {
+            case 'w': movement.forward = true; break;
+            case 's': movement.backward = true; break;
+            case 'a': movement.left = true; break;
+            case 'd': movement.right = true; break;
+        }
+    });
+    
+    window.addEventListener("keyup", (e) => {
+        switch(e.key.toLowerCase()) {
+            case 'w': movement.forward = false; break;
+            case 's': movement.backward = false; break;
+            case 'a': movement.left = false; break;
+            case 'd': movement.right = false; break;
+        }
+    });
+
     for(i=0; i<numNodes; i++) initNodes(i);
 
     render();
 }
 
+function updateMovement() {
+    // Handle rotation (A/D keys)
+    if (movement.left) {
+        direction += 2; // rotate left
+    }
+    if (movement.right) {
+        direction -= 2; // rotate right
+    }
+
+    // Convert degrees to radians for direction
+    const rad = radians(direction);
+
+    // Forward/backward movement (W/S keys)
+    let dx = 0;
+    let dz = 0;
+
+    if (movement.forward) {
+        dx += speed * Math.sin(rad);
+        dz += speed * Math.cos(rad);
+    }
+    if (movement.backward) {
+        dx -= speed * Math.sin(rad);
+        dz -= speed * Math.cos(rad);
+    }
+
+    // Update character position
+    position[0] += dx;
+    position[2] += dz;
+
+    // Update torso rotation
+    theta[torsoId] = direction;
+    initNodes(torsoId);
+}
+
 
 var render = function() {
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
-        gl.clear( gl.COLOR_BUFFER_BIT );
-        traverse(torsoId);
-        requestAnimationFrame(render);
+    updateMovement();
+
+    const rad = radians(direction);
+
+    // Third-person camera view behind the character
+    let eye = vec3(
+        position[0] - 5 * Math.sin(rad),
+        5,
+        position[2] - 5 * Math.cos(rad)
+    );
+    let at = vec3(position[0], 2.5, position[2]);
+    let up = vec3(0, 1, 0);
+
+    modelViewMatrix = lookAt(eye, at, up);
+
+    // Apply character's transform
+    modelViewMatrix = mult(modelViewMatrix, translate(position[0], 0.0, position[2]));
+    modelViewMatrix = mult(modelViewMatrix, rotate(direction, vec3(0, 1, 0)));
+
+    traverse(torsoId);
+    requestAnimationFrame(render);
 }
