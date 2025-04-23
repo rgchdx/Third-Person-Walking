@@ -74,12 +74,18 @@ let movement = {
     forward: false,
     backward: false,
     left: false,
-    right: false
+    right: false,
+    runningf: false,
+    moon: false
 };
 
 let position = vec3(0, 0, 0);  // Initial world position
 let direction = 0; // Y-axis rotation angle in degrees
 const speed = 0.1;
+
+let walkingCycle = 0; // Variable to control the walking cycle
+let runningCycle = 0
+let moonCycle = 0; 
 
 //-------------------------------------------
 
@@ -392,6 +398,8 @@ window.onload = function init() {
             case 's': movement.backward = true; break;
             case 'a': movement.left = true; break;
             case 'd': movement.right = true; break;
+            case 'q': movement.runningf = true; break;
+            case 'e': movement.moon = true; break;
         }
     });
     
@@ -401,6 +409,8 @@ window.onload = function init() {
             case 's': movement.backward = false; break;
             case 'a': movement.left = false; break;
             case 'd': movement.right = false; break;
+            case 'q': movement.runningf = false; break;
+            case 'e': movement.moon = false; break;
         }
     });
 
@@ -424,14 +434,29 @@ function updateMovement() {
     // Forward/backward movement (W/S keys)
     let dx = 0;
     let dz = 0;
+    let isWalking = false;
+    let isRunning = false;
+    let isMoonWalking = false;
 
     if (movement.forward) {
         dx += speed * Math.sin(rad);
         dz += speed * Math.cos(rad);
+        isWalking = true;
     }
     if (movement.backward) {
         dx -= speed * Math.sin(rad);
         dz -= speed * Math.cos(rad);
+        isWalking = true;
+    }
+    if (movement.runningf) {
+        dx += 2 * speed * Math.sin(rad);
+        dz += 2 * speed * Math.cos(rad);
+        isRunning = true;
+    }
+    if (movement.moon) {
+        dx -= 0.5 * speed * Math.sin(rad);
+        dz -= 0.5 * speed * Math.cos(rad);
+        isMoonWalking = true;
     }
 
     // Update character position
@@ -441,6 +466,93 @@ function updateMovement() {
     // Update torso rotation
     theta[torsoId] = direction;
     initNodes(torsoId);
+
+    if(isWalking) {
+        walkingCycle += 1;
+        let swing = 30*Math.sin(walkingCycle * 0.1);
+        theta[leftUpperLegId] = swing;
+        theta[rightUpperLegId] = -swing;
+        theta[leftLowerLegId] = -swing / 2;
+        theta[rightLowerLegId] = swing / 2;
+        // Make the legs point downwards
+        theta[leftUpperLegId] += 180;
+        theta[rightUpperLegId] += 180;
+
+        theta[leftUpperArmId] = -swing;
+        theta[rightUpperArmId] = swing;
+        theta[leftLowerArmId] = swing / 2;
+        theta[rightLowerArmId] = -swing / 2;
+        // Make the arms point upwards
+        theta[leftUpperArmId] += 180;
+        theta[rightUpperArmId] += 180;
+
+        initNodes(leftUpperLegId);
+        initNodes(rightUpperLegId);
+        initNodes(leftLowerLegId);
+        initNodes(rightLowerLegId);
+        initNodes(leftUpperArmId);
+        initNodes(rightUpperArmId);
+        initNodes(leftLowerArmId);
+        initNodes(rightLowerArmId);
+    } else if (isRunning) {
+        runningCycle += 1;
+        let swing = 45*Math.sin(runningCycle * 0.15);
+        theta[leftUpperLegId] = swing;
+        theta[rightUpperLegId] = -swing;
+        theta[leftLowerLegId] = -swing / 2;
+        theta[rightLowerLegId] = swing / 2;
+        theta[leftUpperLegId] += 180; // Make the legs point downwards
+        theta[rightUpperLegId] += 180;
+        theta[leftLowerLegId] += 30;
+        theta[rightLowerLegId] += 30;
+
+        theta[leftUpperArmId] = -swing;
+        theta[rightUpperArmId] = swing;
+        theta[leftLowerArmId] = swing / 2;
+        theta[rightLowerArmId] = -swing / 2;
+        theta[leftUpperArmId] += 180; // Make the arms point upwards
+        theta[rightUpperArmId] += 180;
+        theta[rightLowerArmId] -= 45;
+        theta[leftLowerArmId] -= 45;
+
+        initNodes(leftUpperLegId);
+        initNodes(rightUpperLegId);
+        initNodes(leftLowerLegId);
+        initNodes(rightLowerLegId);
+        initNodes(leftUpperArmId);
+        initNodes(rightUpperArmId);
+        initNodes(leftLowerArmId);
+        initNodes(rightLowerArmId);
+    } else if (isMoonWalking){
+        moonCycle += 1;
+        let swing = 20*Math.sin(moonCycle * 0.05);
+        theta[leftUpperLegId] = swing;
+        theta[rightUpperLegId] = -swing;
+        theta[leftLowerLegId] = -swing / 2;
+        theta[rightLowerLegId] = swing / 2;
+        theta[leftUpperLegId] += 180; // Make the legs point downwards
+        theta[rightUpperLegId] += 180;
+
+
+        theta[rightUpperArmId] = swing;
+        theta[leftUpperArmId] += 100; // Make the arms point upwards
+        theta[rightUpperArmId] += 180;
+        theta[leftLowerArmId] -= 90;
+        theta[rightLowerArmId] -= 90;
+
+        initNodes(leftUpperLegId);
+        initNodes(rightUpperLegId);
+        initNodes(leftLowerLegId);
+        initNodes(rightLowerLegId);
+        initNodes(leftUpperArmId);
+        initNodes(rightUpperArmId);
+        initNodes(leftLowerArmId);
+        initNodes(rightLowerArmId);
+    } else {
+        walkingCycle = 0;
+        runningCycle = 0;
+        moonCycle = 0;
+    }
 }
 
 
