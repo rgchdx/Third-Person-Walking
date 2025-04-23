@@ -23,6 +23,7 @@ var vertices = [
 ];
 
 
+// Adding hands and giving them IDs
 var torsoId = 0;
 var headId  = 1;
 var head1Id = 1;
@@ -39,6 +40,7 @@ var leftHandId = 10;
 var rightHandId = 11;
 
 
+// Declaring the dimensions
 var torsoHeight = 5.0;
 var torsoWidth = 1.0;
 var upperArmHeight = 3.0;
@@ -88,9 +90,11 @@ let position = vec3(0, 0, 0);  // Initial world position
 let direction = 0; // Y-axis rotation angle in degrees
 const speed = 0.1;
 
+//Walking, running, and moonwalking cycles
 let walkingCycle = 0; // Variable to control the walking cycle
 let runningCycle = 0
 let moonCycle = 0; 
+
 
 //-------------------------------------------
 
@@ -378,10 +382,11 @@ window.onload = function init() {
     var positionLoc = gl.getAttribLocation( program, "aPosition" );
     gl.vertexAttribPointer( positionLoc, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( positionLoc );
-    //change initialization of nodes so that it will get default.
+    // Initialize the nodes (body parts)
     for(i=0; i<numNodes; i++) initNodes(i);
 
 
+    // Adding the controls
     window.addEventListener("keydown", (e) => {
         switch(e.key.toLowerCase()) {
             case 'w': movement.forward = true; break;
@@ -390,7 +395,6 @@ window.onload = function init() {
             case 'd': movement.right = true; break;
             case 'q': movement.runningf = true; break;
             case 'e': movement.moon = true; break;
-            // add jump
         }
     });
     
@@ -402,7 +406,6 @@ window.onload = function init() {
             case 'd': movement.right = false; break;
             case 'q': movement.runningf = false; break;
             case 'e': movement.moon = false; break;
-            // add jump
         }
     });
 
@@ -411,6 +414,7 @@ window.onload = function init() {
     render();
 }
 
+// Movements
 function updateMovement() {
     // Handle rotation (A/D keys)
     if (movement.left) {
@@ -430,6 +434,7 @@ function updateMovement() {
     let isRunning = false;
     let isMoonWalking = false;
 
+    // Calculate movement based on direction and speed
     if (movement.forward) {
         dx += speed * Math.sin(rad);
         dz += speed * Math.cos(rad);
@@ -535,7 +540,7 @@ function updateMovement() {
         theta[leftUpperArmId] = -weakSwing;
         theta[leftUpperArmId] += 120; // Make the arms point upwards
         theta[rightUpperArmId] += 180;
-        theta[leftLowerArmId] = -100;
+        theta[leftLowerArmId] = -150;
         theta[rightLowerArmId] = 0;
 
         initNodes(leftUpperLegId);
@@ -549,6 +554,7 @@ function updateMovement() {
         initNodes(leftHandId);
         initNodes(rightHandId);
     } else {
+        // Reset the angles to neutral position when not moving
         walkingCycle = 0;
         runningCycle = 0;
         moonCycle = 0;
