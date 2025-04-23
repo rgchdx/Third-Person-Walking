@@ -12,7 +12,6 @@ var instanceMatrix;
 var modelViewMatrixLoc;
 
 var vertices = [
-
     vec4( -0.5, -0.5,  0.5, 1.0 ),
     vec4( -0.5,  0.5,  0.5, 1.0 ),
     vec4( 0.5,  0.5,  0.5, 1.0 ),
@@ -27,7 +26,7 @@ var vertices = [
 var torsoId = 0;
 var headId  = 1;
 var head1Id = 1;
-var head2Id = 10;
+var head2Id = 12;
 var leftUpperArmId = 2;
 var leftLowerArmId = 3;
 var rightUpperArmId = 4;
@@ -36,6 +35,8 @@ var leftUpperLegId = 6;
 var leftLowerLegId = 7;
 var rightUpperLegId = 8;
 var rightLowerLegId = 9;
+var leftHandId = 10;
+var rightHandId = 11;
 
 
 var torsoHeight = 5.0;
@@ -50,12 +51,15 @@ var lowerLegHeight = 2.0;
 var upperLegHeight = 3.0;
 var headHeight = 1.5;
 var headWidth = 1.0;
+var handWidth = 0.5;
+var handHeight = 1.0;
 
-var numNodes = 10;
-var numAngles = 11;
+// change number of nodes accordingly
+var numNodes = 12;
+var numAngles = 13;
 var angle = 0;
 
-var theta = [0, 0, 0, 0, 0, 0, 180, 0, 180, 0, 0];
+var theta = [0, 0, 0, 0, 0, 0, 180, 0, 180, 0, 0, 0, 0];
 
 var numVertices = 24;
 
@@ -70,6 +74,7 @@ var modelViewLoc;
 
 var pointsArray = [];
 
+// Movements
 let movement = {
     forward: false,
     backward: false,
@@ -168,14 +173,14 @@ function initNodes(Id) {
 
     m = translate(0.0, upperArmHeight, 0.0);
     m = mult(m, rotate(theta[leftLowerArmId], vec3(1, 0, 0)));
-    figure[leftLowerArmId] = createNode( m, leftLowerArm, null, null );
+    figure[leftLowerArmId] = createNode( m, leftLowerArm, null, leftHandId );
     break;
 
     case rightLowerArmId:
 
     m = translate(0.0, upperArmHeight, 0.0);
     m = mult(m, rotate(theta[rightLowerArmId], vec3(1, 0, 0)));
-    figure[rightLowerArmId] = createNode( m, rightLowerArm, null, null );
+    figure[rightLowerArmId] = createNode( m, rightLowerArm, null, rightHandId );
     break;
 
     case leftLowerLegId:
@@ -190,6 +195,21 @@ function initNodes(Id) {
     m = translate(0.0, upperLegHeight, 0.0);
     m = mult(m, rotate(theta[rightLowerLegId], vec3(1, 0, 0)));
     figure[rightLowerLegId] = createNode( m, rightLowerLeg, null, null );
+    break;
+
+    //adding the left hand and right hand
+    case leftHandId:
+
+    m = translate(0.0, handHeight, 0.0);
+    m = mult(m, rotate(theta[leftHandId], vec3(1, 0, 0)));
+    figure[leftHandId] = createNode( m, leftHand, null, null );
+    break;
+
+    case rightHandId:
+
+    m = translate(0.0, handHeight, 0.0);
+    m = mult(m, rotate(theta[rightHandId], vec3(1, 0, 0)));
+    figure[rightHandId] = createNode( m, rightHand, null, null );
     break;
 
     }
@@ -287,6 +307,20 @@ function rightLowerLeg() {
     for(var i =0; i<6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4*i, 4);
 }
 
+function rightHand() {
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * handHeight, 0.0) );
+    instanceMatrix = mult(instanceMatrix, scale(handWidth, handHeight, handWidth) );
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix) );
+    for(var i =0; i<6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4*i, 4);
+}
+
+function leftHand() {
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * handHeight, 0.0) );
+    instanceMatrix = mult(instanceMatrix, scale(handWidth, handHeight, handWidth) );
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix) );
+    for(var i =0; i<6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4*i, 4);
+}
+
 function quad(a, b, c, d) {
      pointsArray.push(vertices[a]);
      pointsArray.push(vertices[b]);
@@ -344,53 +378,9 @@ window.onload = function init() {
     var positionLoc = gl.getAttribLocation( program, "aPosition" );
     gl.vertexAttribPointer( positionLoc, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( positionLoc );
+    //change initialization of nodes so that it will get default.
+    for(i=0; i<numNodes; i++) initNodes(i);
 
-        document.getElementById("slider0").onchange = function(event) {
-        theta[torsoId ] = event.target.value;
-        initNodes(torsoId);
-    };
-        document.getElementById("slider1").onchange = function(event) {
-        theta[head1Id] = event.target.value;
-        initNodes(head1Id);
-    };
-
-    document.getElementById("slider2").onchange = function(event) {
-         theta[leftUpperArmId] = event.target.value;
-         initNodes(leftUpperArmId);
-    };
-    document.getElementById("slider3").onchange = function(event) {
-         theta[leftLowerArmId] =  event.target.value;
-         initNodes(leftLowerArmId);
-    };
-
-        document.getElementById("slider4").onchange = function(event) {
-        theta[rightUpperArmId] = event.target.value;
-        initNodes(rightUpperArmId);
-    };
-    document.getElementById("slider5").onchange = function(event) {
-         theta[rightLowerArmId] =  event.target.value;
-         initNodes(rightLowerArmId);
-    };
-        document.getElementById("slider6").onchange = function(event) {
-        theta[leftUpperLegId] = event.target.value;
-        initNodes(leftUpperLegId);
-    };
-    document.getElementById("slider7").onchange = function(event) {
-         theta[leftLowerLegId] = event.target.value;
-         initNodes(leftLowerLegId);
-    };
-    document.getElementById("slider8").onchange = function(event) {
-         theta[rightUpperLegId] =  event.target.value;
-         initNodes(rightUpperLegId);
-    };
-        document.getElementById("slider9").onchange = function(event) {
-        theta[rightLowerLegId] = event.target.value;
-        initNodes(rightLowerLegId);
-    };
-    document.getElementById("slider10").onchange = function(event) {
-         theta[head2Id] = event.target.value;
-         initNodes(head2Id);
-    };
 
     window.addEventListener("keydown", (e) => {
         switch(e.key.toLowerCase()) {
@@ -400,6 +390,7 @@ window.onload = function init() {
             case 'd': movement.right = true; break;
             case 'q': movement.runningf = true; break;
             case 'e': movement.moon = true; break;
+            // add jump
         }
     });
     
@@ -411,6 +402,7 @@ window.onload = function init() {
             case 'd': movement.right = false; break;
             case 'q': movement.runningf = false; break;
             case 'e': movement.moon = false; break;
+            // add jump
         }
     });
 
@@ -494,6 +486,8 @@ function updateMovement() {
         initNodes(rightUpperArmId);
         initNodes(leftLowerArmId);
         initNodes(rightLowerArmId);
+        initNodes(leftHandId);
+        initNodes(rightHandId);
     } else if (isRunning) {
         runningCycle += 1;
         let swing = 45*Math.sin(runningCycle * 0.15);
@@ -523,22 +517,26 @@ function updateMovement() {
         initNodes(rightUpperArmId);
         initNodes(leftLowerArmId);
         initNodes(rightLowerArmId);
+        initNodes(leftHandId);
+        initNodes(rightHandId);
     } else if (isMoonWalking){
         moonCycle += 1;
         let swing = 20*Math.sin(moonCycle * 0.05);
-        theta[leftUpperLegId] = swing;
-        theta[rightUpperLegId] = -swing;
-        theta[leftLowerLegId] = -swing / 2;
-        theta[rightLowerLegId] = swing / 2;
+        let weakSwing = 10*Math.sin(moonCycle * 0.05);
+        theta[leftUpperLegId] = -swing;
+        theta[rightUpperLegId] = swing;
+        theta[leftLowerLegId] = swing / 2;
+        theta[rightLowerLegId] = -swing / 2;
         theta[leftUpperLegId] += 180; // Make the legs point downwards
         theta[rightUpperLegId] += 180;
 
 
         theta[rightUpperArmId] = swing;
-        theta[leftUpperArmId] += 100; // Make the arms point upwards
+        theta[leftUpperArmId] = -weakSwing;
+        theta[leftUpperArmId] += 120; // Make the arms point upwards
         theta[rightUpperArmId] += 180;
-        theta[leftLowerArmId] -= 90;
-        theta[rightLowerArmId] -= 90;
+        theta[leftLowerArmId] = -100;
+        theta[rightLowerArmId] = 0;
 
         initNodes(leftUpperLegId);
         initNodes(rightUpperLegId);
@@ -548,6 +546,8 @@ function updateMovement() {
         initNodes(rightUpperArmId);
         initNodes(leftLowerArmId);
         initNodes(rightLowerArmId);
+        initNodes(leftHandId);
+        initNodes(rightHandId);
     } else {
         walkingCycle = 0;
         runningCycle = 0;
